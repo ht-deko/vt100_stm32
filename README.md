@@ -62,9 +62,9 @@ PB15 ～ PB12 に接続します、電流制限抵抗をお忘れなく。
 ## 必要なソフトウェア
 コンパイルするには以下のソフトウェアが必要です。
 
- - [Arduino IDE](https://www.arduino.cc/en/Main/Software)
- - [Arduino STM32](https://github.com/rogerclarkmelbourne/Arduino_STM32)
- - [Arduino_PS2Keyboard](https://github.com/Tamakichi/Arduino_PS2Keyboard)
+ - [Arduino IDE (arduino.cc)](https://www.arduino.cc/en/Main/Software)
+ - [Arduino STM32 (rogerclarkmelbourne@GitHub)](https://github.com/rogerclarkmelbourne/Arduino_STM32)
+ - [Arduino_PS2Keyboard (Tamakichi@GitHub)](https://github.com/Tamakichi/Arduino_PS2Keyboard)
  
  転送はブートローダーでもシリアルでも ST-Link でも構いません。
 
