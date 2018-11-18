@@ -1,7 +1,7 @@
 # VT100 Terminal Emulator for Arduino STM32
 Arduino STM32 用の VT100 エミュレータです。
 
-![image](https://user-images.githubusercontent.com/14885863/48667159-9e725880-eb13-11e8-92f7-d5256fc95f82.png)
+![image](https://user-images.githubusercontent.com/14885863/48667436-be584b00-eb18-11e8-9793-de8a9e4e1c98.png)
 
 ## 必要なハードウェア
 以下のハードウェアが必要です。
