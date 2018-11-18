@@ -77,16 +77,26 @@ union ATTR {
   struct TATTR Bits;
 };
 
-// カラーアトリビュート用
+// カラーアトリビュート用 (RGB565)
 static const uint16_t aColors[] = {
+  // Normal
   0x0000, // 0-black
   0xf800, // 1-red
-  0x0780, // 2-green
-  0xfe00, // 3-yellow
+  0x07e0, // 2-green
+  0xffe0, // 3-yellow
   0x001f, // 4-blue
   0xf81f, // 5-magenta
   0x07ff, // 6-cyan
-  0xffff  // 7-white
+  0xffff, // 7-white
+  // Blink (暗色表現)
+  0x0000, // 8-black (Dark)
+  0x8000, // 9-red (Dark)
+  0x0400, // 10-green (Dark)
+  0x8400, // 11-yellow (Dark)
+  0x0010, // 12-blue (Dark)
+  0x8010, // 13-magenta (Dark)
+  0x0410, // 14-cyan (Dark)
+  0x8410  // 15-white (Dark)
 };
 
 const uint8_t clBlack = 0;
@@ -155,9 +165,8 @@ void sc_updateChar(uint16_t x, uint16_t y) {
   union COLOR l;
   a.value = attrib[idx];             // 文字アトリビュートの取得
   l.value = colors[idx];             // カラーアトリビュートの取得
-  uint16_t fore = aColors[l.Color.Foreground];
-  uint16_t back = aColors[l.Color.Background];
-
+  uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink * 8)];
+  uint16_t back = aColors[l.Color.Background | (a.Bits.Blink * 8)];
   if (a.Bits.Reverse) swap(fore, back);
   uint16_t xx = x * CH_W;
   uint16_t yy = y * CH_H;
@@ -225,8 +234,8 @@ void sc_updateLine(uint16_t ln) {
       c  = screen[idx];                            // キャラクタの取得
       a.value = attrib[idx];                       // 文字アトリビュートの取得
       l.value = colors[idx];                       // カラーアトリビュートの取得
-      uint16_t fore = aColors[l.Color.Foreground];
-      uint16_t back = aColors[l.Color.Background];
+      uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink * 8)];
+      uint16_t back = aColors[l.Color.Background | (a.Bits.Blink * 8)];
       if (a.Bits.Reverse) swap(fore, back);
       dt = fontTop[c * CH_H + i];                  // 文字内i行データの取得
       bool prev = (a.Bits.Underline && (i == MAX_CH_Y));
@@ -917,7 +926,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
         cAttr.Bits.Bold = 1;
         break;
       case 2:
-        // イタリック / 暗い
+        // イタリック
         cAttr.Bits.Lowint = 1;
         break;
       case 4:
@@ -925,7 +934,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
         cAttr.Bits.Underline = 1;
         break;
       case 5:
-        // 点滅
+        // 点滅 (暗色表現)
         cAttr.Bits.Blink = 1;
         break;
       case 7:
@@ -941,7 +950,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
         cAttr.Bits.Bold = 0;
         break;
       case 22:
-        // イタリック / 暗いオフ
+        // イタリックオフ
         cAttr.Bits.Lowint = 0;
         break;
       case 24:
@@ -949,7 +958,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
         cAttr.Bits.Underline = 0;
         break;
       case 25:
-        // 点滅オフ
+        // 点滅 (暗色表現) オフ
         cAttr.Bits.Blink = 0;
         break;
       case 27:
