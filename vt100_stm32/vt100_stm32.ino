@@ -118,6 +118,7 @@ uint8_t tabs[SC_W];          // タブ位置バッファ
 bool wrap = true;            // 折り返しモード
 bool isShowCursor = false;   // カーソル表示中か？
 bool canShowCursor = false;  // カーソル表示可能か？
+bool lastShowCursor = false; // 前回のカーソル表示状態
 bool hasParam = false;       // <ESC> [ がパラメータを持っているか？
 uint8_t escMode = 0;         // エスケープシーケンスモード
 
@@ -189,17 +190,21 @@ void drawCursor(uint16_t x, uint16_t y) {
 }
 
 // カーソルの表示
-void dispCursor() {
-  if (escMode) return;
-  isShowCursor = !isShowCursor;
+void dispCursor(bool forceupdate) {
+  if (escMode) 
+    return;
+  if (!forceupdate)
+    isShowCursor = !isShowCursor;
+  if (lastShowCursor || (forceupdate && isShowCursor))
+    sc_updateChar(o_XP, o_YP);
   if (isShowCursor) {
     drawCursor(XP, YP);
     o_XP = XP;
     o_YP = YP;
-  } else {
-    sc_updateChar(o_XP, o_YP);
   }
-  canShowCursor = false;
+  if (!forceupdate)
+    canShowCursor = false;
+  lastShowCursor = isShowCursor;
 }
 
 // 指定行をTFT画面に反映
@@ -955,6 +960,14 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
         // 不可視オフ
         cAttr.Bits.Hide = 0;
         break;
+      case 39:
+        // 前景色をデフォルトに戻す
+        cColor.Color.Foreground = oColor.Color.Foreground;
+        break;
+      case 49:
+        // 背景色をデフォルトに戻す
+        cColor.Color.Background = oColor.Color.Background;
+        break;
       default:
         if (v >= 30 && v < 38) {
           // 前景色
@@ -1155,7 +1168,7 @@ void setup() {
 }
 
 void loop() {
-  bool needCursorupdate = false;
+  bool needCursorUpdate = false;
 
   // キーボード入力処理 (通信相手への出力)
   if (keyboard.available()) {
@@ -1189,12 +1202,12 @@ void loop() {
         Serial3.print(c);
         break;
     }
-    needCursorupdate = c;
+    needCursorUpdate = c;
   }
 
   // カーソル表示処理
-  if (canShowCursor || needCursorupdate)
-    dispCursor();
+  if (canShowCursor || needCursorUpdate)
+    dispCursor(needCursorUpdate);
 
   // シリアル入力処理 (通信相手からの入力)
   while (Serial3.available()) {
