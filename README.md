@@ -37,7 +37,7 @@ SPI 接続です。
 #### PS/2 Keyboard Connector
 ピンを移動させる場合には 5V トレラントのピンを選んでください。CLK と DAT ピンは 10kΩ でプルアップする必要があります。
 
-| TFT LCD | Blue Pill (STM32) |
+| PS/2 | Blue Pill (STM32) |
 |:--------|:------------------|
 | 1 CLK| PB6 |
 | 2 DAT| PB7 |
