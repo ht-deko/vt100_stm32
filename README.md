@@ -12,6 +12,9 @@ Arduino STM32 用の VT100 エミュレータです。
  - Passive Buzzer (Option)
  - LED (Option)
 
+**See also:**
+ - [Blue Pill (wiki.stm32duino.com)](https://wiki.stm32duino.com/index.php?title=Blue_Pill)
+ - [STM32F103 (ht-deko.com)](https://ht-deko.com/arduino/stm32f103c8t6.html)
 
 ### 接続
 接続は以下のようになります。
@@ -20,6 +23,8 @@ Arduino STM32 用の VT100 エミュレータです。
 
 #### ILI9341 TFT LCD Display
 SPI 接続です。
+
+![image](https://user-images.githubusercontent.com/14885863/48667493-ff049400-eb19-11e8-814d-52d6b3746fc3.png)
 
 | TFT LCD | Blue Pill (STM32) |
 |:--------|:------------------|
@@ -36,6 +41,8 @@ SPI 接続です。
 
 #### PS/2 Keyboard Connector
 ピンを移動させる場合には 5V トレラントのピンを選んでください。CLK と DAT ピンは 10kΩ でプルアップする必要があります。
+
+![image](https://user-images.githubusercontent.com/14885863/48667483-db414e00-eb19-11e8-81c2-ea4701579dba.png)
 
 | PS/2 | Blue Pill (STM32) |
 |:--------|:------------------|
