@@ -15,8 +15,7 @@ Arduino STM32 用の VT100 エミュレータです。
 
 ### 接続
 接続は以下のようになります。
-![vt100_01](https://user-images.githubusercontent.com/14885863/48666935-e0e56680-eb0e-11e8-942c-702af3ae1ddf.png)
-
+![image](https://user-images.githubusercontent.com/14885863/48667439-e0ea6400-eb18-11e8-8a12-b14a269898ec.png)
 
 #### ILI9341 TFT LCD Display
 SPI 接続です。
