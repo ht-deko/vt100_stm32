@@ -14,7 +14,6 @@ Arduino STM32 用の VT100 エミュレータです。
 
 **See also:**
  - [Blue Pill (wiki.stm32duino.com)](https://wiki.stm32duino.com/index.php?title=Blue_Pill)
- - [STM32F103 (ht-deko.com)](https://ht-deko.com/arduino/stm32f103c8t6.html)
 
 ### 接続
 接続は以下のようになります。
@@ -67,6 +66,9 @@ PB15 ～ PB12 に接続します、電流制限抵抗をお忘れなく。
  - [Arduino_PS2Keyboard (Tamakichi@GitHub)](https://github.com/Tamakichi/Arduino_PS2Keyboard)
  
  転送はブートローダーでもシリアルでも ST-Link でも構いません。
+
+**See also:**
+ - [STM32F103 (ht-deko.com)](https://ht-deko.com/arduino/stm32f103c8t6.html)
 
 ### シリアルバッファのサイズ調整
 Arduino STM32 のデフォルトである 64 だと 9600bps で描画が追い付かない事があるためシリアルバッファを増やします (usart.h)。
