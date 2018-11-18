@@ -227,3 +227,9 @@ VT100 のエスケープシーケンスは以下のサイトを参考にしま�
  - [ANSI/VT100 Terminal Control Escape Sequences (termsys.demon.co.uk)](http://www.termsys.demon.co.uk/vtansi.htm)
  - [VT100 escape codes](https://www.csie.ntu.edu.tw/~r92094/c++/VT100.html)
  - [ANSI Escape sequences - VT100 / VT52](http://ascii-table.com/ansi-escape-sequences-vt-100.php)
+
+## コーディング上の参考資料
+~~パク~~...インスパイア元です。
+ - [Minimalistic STM32 and ILI9341 based terminal (GitHub)](https://github.com/cbm80amiga/STM32_TFT22_terminal_RRE)
+ - [次はSTM32ボードを積極的に使ていきたい（26） グラフィック液晶（7) (猫にコ・ン・バ・ン・ワ)](http://nuneno.cocolog-nifty.com/blog/2018/07/stm3226-7-3b99.html)
+ 
