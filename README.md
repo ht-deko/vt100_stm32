@@ -225,5 +225,5 @@ VT100 のエスケープシーケンスは以下のサイトを参考にしま�
  - [対応制御シーケンス - Tera Term ヘルプ 目次 (Tera Term Home Page)](https://ttssh2.osdn.jp/manual/ja/about/ctrlseq.html)
  - [Chapter 3 Programmer Information - VT100 User Guide (VT100.net)](https://vt100.net/docs/vt100-ug/chapter3.html)
  - [ANSI/VT100 Terminal Control Escape Sequences (termsys.demon.co.uk)](http://www.termsys.demon.co.uk/vtansi.htm)
- - [[VT100 escape codes](https://www.csie.ntu.edu.tw/~r92094/c++/VT100.html)
+ - [VT100 escape codes](https://www.csie.ntu.edu.tw/~r92094/c++/VT100.html)
  - [ANSI Escape sequences - VT100 / VT52](http://ascii-table.com/ansi-escape-sequences-vt-100.php)
