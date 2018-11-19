@@ -221,6 +221,9 @@ static char get_iso8859_code(void)
 ※ この VT100 エミュレータの通信速度は 9600 bps、画面サイズは 53 x 30 です。 
 
 ## VT100 の参考資料
+
+![image](https://user-images.githubusercontent.com/14885863/48684164-c9cc7480-ebf3-11e8-92b3-a85c321d1771.png)
+
 VT100 のエスケープシーケンスは以下のサイトを参考にしました。
 
  - [VT100のエスケープシーケンス (BK class)](http://bkclass.web.fc2.com/doc_vt100.html)
