@@ -64,6 +64,7 @@ PB15 ～ PB12 に接続します、電流制限抵抗をお忘れなく。
  - [Arduino IDE (arduino.cc)](https://www.arduino.cc/en/Main/Software)
  - [Arduino STM32 (rogerclarkmelbourne@GitHub)](https://github.com/rogerclarkmelbourne/Arduino_STM32)
  - [Arduino_PS2Keyboard (Tamakichi@GitHub)](https://github.com/Tamakichi/Arduino_PS2Keyboard)
+ - [TTVoutfonts (Tamakichi@GitHub)](https://github.com/Tamakichi/ttbasic_arduino_stm32/tree/master/libraries/TTVoutfonts)
  
  転送はブートローダーでもシリアルでも ST-Link でも構いません。
 
