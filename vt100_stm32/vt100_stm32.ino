@@ -9,8 +9,11 @@
 
 #include <Adafruit_GFX_AS.h>      // Core graphics library
 #include <Adafruit_ILI9341_STM.h> // Hardware-specific library
-#include <font6x8tt.h>            // 6x8ドットフォント
 #include <PS2Keyboard_stm32.h>    // PS/2 Keyboard Library for STM32
+//#include <font6x8tt.h>            // 6x8 ドットフォント (TTBASIC 付属)
+//#include "font6x8e200.h"          // 6x8 ドットフォント (SHARP PC-E200 風)
+//#include "font6x8e500.h"          // 6x8 ドットフォント (SHARP PC-E500 風)
+#include "font6x8sc1602b.h"       // 6x8 ドットフォント (SUNLIKE SC1602B 風)
 
 // TFT 制御用ピン
 #define TFT_CS   PA4
@@ -90,7 +93,7 @@ static const uint16_t aColors[] = {
   0x0410, // cyan
   0xbdf7, // black
   // Bright (8..15)
-  0x8410,  // white
+  0x8410, // white
   0xf800, // red
   0x07e0, // green
   0xffe0, // yellow
@@ -725,7 +728,7 @@ void cursorPosition(uint8_t y, uint8_t x) {
 // ED (Erase In Display): 画面を消去
 void eraseInDisplay(uint8_t m) {
   uint8_t sl = 0, el = 0;
-  uint16_t idx, n;
+  uint16_t idx = 0, n = 0;
 
   switch (m) {
     case 0:
@@ -909,7 +912,7 @@ void resetMode(int16_t *vals, int16_t nVals) {
 void selectGraphicRendition(int16_t *vals, int16_t nVals) {
   uint8_t seq = 0;
   uint16_t r, g, b, cIdx;
-  bool isFore;
+  bool isFore = true;
   for (int16_t i = 0; i < nVals; i++) {
     int16_t v = vals[i];
     switch (seq) {
