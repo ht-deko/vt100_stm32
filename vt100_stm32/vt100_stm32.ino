@@ -63,13 +63,14 @@ const uint16_t MAX_SP_Y = SP_H - 1;     // ピクセルスクリーン最大縦�
 
 // 文字アトリビュート用
 struct TATTR {
-  uint8_t Bold  : 1;     // 1
-  uint8_t Lowint  : 1;   // 2
-  uint8_t Underline : 1; // 4
-  uint8_t Blink : 1;     // 5
-  uint8_t Reverse : 1;   // 7
-  uint8_t Hide : 1;      // 8
-  uint8_t Reserved : 2;
+  uint8_t Bold  : 1;      // 1
+  uint8_t Faint  : 1;     // 2
+  uint8_t Italic : 1;     // 3
+  uint8_t Underline : 1;  // 4
+  uint8_t Blink : 1;      // 5 (Slow Blink)
+  uint8_t RapidBlink : 1; // 6
+  uint8_t Reverse : 1;    // 7
+  uint8_t Conceal : 1;    // 8
 };
 
 union ATTR {
@@ -79,24 +80,24 @@ union ATTR {
 
 // カラーアトリビュート用 (RGB565)
 static const uint16_t aColors[] = {
-  // Normal
-  0x0000, // 0-black
-  0xf800, // 1-red
-  0x07e0, // 2-green
-  0xffe0, // 3-yellow
-  0x001f, // 4-blue
-  0xf81f, // 5-magenta
-  0x07ff, // 6-cyan
-  0xffff, // 7-white
-  // Blink (暗色表現)
-  0x0000, // 8-black (Dark)
-  0x8000, // 9-red (Dark)
-  0x0400, // 10-green (Dark)
-  0x8400, // 11-yellow (Dark)
-  0x0010, // 12-blue (Dark)
-  0x8010, // 13-magenta (Dark)
-  0x0410, // 14-cyan (Dark)
-  0x8410  // 15-white (Dark)
+  // Normal (0..7)
+  0x0000, // black
+  0x8000, // red
+  0x0400, // green
+  0x8400, // yellow
+  0x0010, // blue (Dark)
+  0x8010, // magenta
+  0x0410, // cyan
+  0xbdf7, // black
+  // Bright (8..15)
+  0x8410,  // white
+  0xf800, // red
+  0x07e0, // green
+  0xffe0, // yellow
+  0x001f, // blue
+  0xf81f, // magenta
+  0x07ff, // cyan
+  0xe73c  // white
 };
 
 const uint8_t clBlack = 0;
@@ -109,9 +110,8 @@ const uint8_t clCyan = 6;
 const uint8_t clWhite = 7;
 
 struct TCOLOR {
-  uint8_t Foreground : 3;
-  uint8_t Background : 3;
-  uint8_t Reserved : 2;
+  uint8_t Foreground : 4;
+  uint8_t Background : 4;
 };
 union COLOR {
   uint8_t value;
@@ -165,8 +165,8 @@ void sc_updateChar(uint16_t x, uint16_t y) {
   union COLOR l;
   a.value = attrib[idx];             // 文字アトリビュートの取得
   l.value = colors[idx];             // カラーアトリビュートの取得
-  uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink * 8)];
-  uint16_t back = aColors[l.Color.Background | (a.Bits.Blink * 8)];
+  uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink << 3)];
+  uint16_t back = aColors[l.Color.Background | (a.Bits.Blink << 3)];
   if (a.Bits.Reverse) swap(fore, back);
   uint16_t xx = x * CH_W;
   uint16_t yy = y * CH_H;
@@ -175,11 +175,8 @@ void sc_updateChar(uint16_t x, uint16_t y) {
     bool prev = (a.Bits.Underline && (i == MAX_CH_Y));
     for (uint8_t j = 0; j < CH_W; j++) {
       bool pset = ((*ptr) & (0x80 >> j));
-      if (pset || prev) {
-        tft.pushColor(fore);
-      } else {
-        tft.pushColor(back);
-      }
+      uint16_t d = (pset || prev) ? fore : back;
+      tft.pushColor(d);
       if (a.Bits.Bold)
         prev = pset;
     }
@@ -200,7 +197,7 @@ void drawCursor(uint16_t x, uint16_t y) {
 
 // カーソルの表示
 void dispCursor(bool forceupdate) {
-  if (escMode) 
+  if (escMode)
     return;
   if (!forceupdate)
     isShowCursor = !isShowCursor;
@@ -234,19 +231,16 @@ void sc_updateLine(uint16_t ln) {
       c  = screen[idx];                            // キャラクタの取得
       a.value = attrib[idx];                       // 文字アトリビュートの取得
       l.value = colors[idx];                       // カラーアトリビュートの取得
-      uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink * 8)];
-      uint16_t back = aColors[l.Color.Background | (a.Bits.Blink * 8)];
+      uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink << 3)];
+      uint16_t back = aColors[l.Color.Background | (a.Bits.Blink << 3)];
       if (a.Bits.Reverse) swap(fore, back);
       dt = fontTop[c * CH_H + i];                  // 文字内i行データの取得
       bool prev = (a.Bits.Underline && (i == MAX_CH_Y));
       for (uint16_t j = 0; j < CH_W; j++) {
-        if ((dt & (0x80 >> j)) || (prev)) {
-          buf[i & 1][cnt] = fore;
-        } else {
-          buf[i & 1][cnt] = back;
-        }
+        bool pset = dt & (0x80 >> j);
+        buf[i & 1][cnt] = (pset || prev) ? fore : back;
         if (a.Bits.Bold)
-          prev = dt & (0x80 >> j);
+          prev = pset;
         cnt++;
       }
     }
@@ -722,10 +716,10 @@ void cursorBackward(int16_t v) {
 // CUP (Cursor Position): カーソルをPl行Pc桁へ移動
 // HVP (Horizontal and Vertical Position): カーソルをPl行Pc桁へ移動
 void cursorPosition(uint8_t y, uint8_t x) {
-  XP = x - 1;
-  if (XP >= SC_W) XP = MAX_SC_X;
   YP = y - 1;
   if (YP >= SC_H) YP = MAX_SC_Y;
+  XP = x - 1;
+  if (XP >= SC_W) XP = MAX_SC_X;
 }
 
 // ED (Erase In Display): 画面を消去
@@ -851,11 +845,11 @@ void deleteLine(uint8_t v) {
 }
 
 // CPR (Cursor Position Report): カーソル位置のレポート
-void cursorPositionReport(uint16_t x, uint16_t y) {
+void cursorPositionReport(uint16_t y, uint16_t x) {
   Serial3.print("\e[");
-  Serial3.print(String(x, DEC));
-  Serial3.print(";");
   Serial3.print(String(y, DEC));
+  Serial3.print(";");
+  Serial3.print(String(x, DEC));
   Serial3.print("R"); // CPR (Cursor Position Report)
 }
 
@@ -913,78 +907,146 @@ void resetMode(int16_t *vals, int16_t nVals) {
 
 // SGR (Select Graphic Rendition): 文字修飾の設定
 void selectGraphicRendition(int16_t *vals, int16_t nVals) {
+  uint8_t seq = 0;
+  uint16_t r, g, b, cIdx;
+  bool isFore;
   for (int16_t i = 0; i < nVals; i++) {
     int16_t v = vals[i];
-    switch (v) {
+    switch (seq) {
       case 0:
-        // 属性クリア
-        cAttr.value = 0;
-        cColor.value = oColor.value;
+        switch (v) {
+          case 0:
+            // 属性クリア
+            cAttr.value = 0;
+            cColor.value = oColor.value;
+            break;
+          case 1:
+            // 太字
+            cAttr.Bits.Bold = 1;
+            break;
+          case 4:
+            // アンダーライン
+            cAttr.Bits.Underline = 1;
+            break;
+          case 5:
+            // 点滅 (明色表現)
+            cAttr.Bits.Blink = 1;
+            break;
+          case 7:
+            // 反転
+            cAttr.Bits.Reverse = 1;
+            break;
+          case 21:
+            // 二重下線 or 太字オフ
+            cAttr.Bits.Bold = 0;
+            break;
+          case 22:
+            // 太字オフ
+            cAttr.Bits.Bold = 0;
+            break;
+          case 24:
+            // アンダーラインオフ
+            cAttr.Bits.Underline = 0;
+            break;
+          case 25:
+            // 点滅 (明色表現) オフ
+            cAttr.Bits.Blink = 0;
+            break;
+          case 27:
+            // 反転オフ
+            cAttr.Bits.Reverse = 0;
+            break;
+          case 38:
+            seq = 1;
+            isFore = true;
+            break;
+          case 39:
+            // 前景色をデフォルトに戻す
+            cColor.Color.Foreground = oColor.Color.Foreground;
+            break;
+          case 48:
+            seq = 1;
+            isFore = false;
+            break;
+          case 49:
+            // 背景色をデフォルトに戻す
+            cColor.Color.Background = oColor.Color.Background;
+            break;
+          default:
+            if (v >= 30 && v <= 37) {
+              // 前景色
+              cColor.Color.Foreground = v - 30;
+            } else if (v >= 40 && v <= 47) {
+              // 背景色
+              cColor.Color.Background = v - 40;
+            }
+            break;
+        }
         break;
       case 1:
-        // 太字
-        cAttr.Bits.Bold = 1;
+        switch (v) {
+          case 2:
+            // RGB
+            seq = 3;
+            break;
+          case 5:
+            // Color Index
+            seq = 2;
+            break;
+          default:
+            seq = 0;
+            break;
+        }
         break;
       case 2:
-        // イタリック
-        cAttr.Bits.Lowint = 1;
+        // Index Color
+        if (v < 256) {
+          if (v < 16) {
+            // ANSI カラー (16 色のインデックスカラーが使われる)
+            cIdx = v;
+          } else if (v < 232) {
+            // 6x6x6 RGB カラー (8 色のインデックスカラー中で最も近い色が使われる)
+            b = ( (v - 16)       % 6) / 3;
+            g = (((v - 16) /  6) % 6) / 3;
+            r = (((v - 16) / 36) % 6) / 3;
+            cIdx = (b << 2) | (g << 1) | r;
+          } else {
+            // 24 色グレースケールカラー (2 色のグレースケールカラーが使われる)
+            if (v < 244)
+              cIdx = 0;
+            else
+              cIdx = 7;
+          }
+          if (isFore)
+            cColor.Color.Foreground = cIdx;
+          else
+            cColor.Color.Background = cIdx;
+        }
+        seq = 0;
+        break;
+      case 3:
+        // RGB - R
+        seq = 4;
         break;
       case 4:
-        // アンダーライン
-        cAttr.Bits.Underline = 1;
+        // RGB - G
+        seq = 5;
         break;
       case 5:
-        // 点滅 (暗色表現)
-        cAttr.Bits.Blink = 1;
-        break;
-      case 7:
-        // 反転
-        cAttr.Bits.Reverse = 1;
-        break;
-      case 8:
-        // 不可視
-        cAttr.Bits.Hide = 1;
-        break;
-      case 21:
-        // 太字オフ
-        cAttr.Bits.Bold = 0;
-        break;
-      case 22:
-        // イタリックオフ
-        cAttr.Bits.Lowint = 0;
-        break;
-      case 24:
-        // アンダーラインオフ
-        cAttr.Bits.Underline = 0;
-        break;
-      case 25:
-        // 点滅 (暗色表現) オフ
-        cAttr.Bits.Blink = 0;
-        break;
-      case 27:
-        // 反転オフ
-        cAttr.Bits.Reverse = 0;
-        break;
-      case 28:
-        // 不可視オフ
-        cAttr.Bits.Hide = 0;
-        break;
-      case 39:
-        // 前景色をデフォルトに戻す
-        cColor.Color.Foreground = oColor.Color.Foreground;
-        break;
-      case 49:
-        // 背景色をデフォルトに戻す
-        cColor.Color.Background = oColor.Color.Background;
+        // RGB - B
+        // RGB (8 色のインデックスカラー中で最も近い色が使われる)
+        r = map(vals[i - 2], 0, 255, 0, 1);
+        g = map(vals[i - 1], 0, 255, 0, 1);
+        b = map(vals[i - 0], 0, 255, 0, 1);
+        cIdx = (b << 2) | (g << 1) | r;
+        if (isFore)
+          cColor.Color.Foreground = cIdx;
+        else
+          cColor.Color.Background = cIdx;
+        seq = 0;
         break;
       default:
-        if (v >= 30 && v < 38) {
-          // 前景色
-          cColor.Color.Foreground = v - 30;
-        } else if (v >= 40 && v < 48) {
-          // 背景色
-          cColor.Color.Background = v - 40;
-        }
+        seq = 0;
         break;
     }
   }
