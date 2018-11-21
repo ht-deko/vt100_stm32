@@ -733,6 +733,7 @@ void identify() {
 
 // RIS (Reset To Initial State) リセット
 void resetToInitialState() {
+  tft.fillScreen(aColors[defaultColor.Color.Background]);
   initCursorAndAttribute();
   eraseInDisplay(2);
 }
