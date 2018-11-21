@@ -54,15 +54,15 @@ uint16_t M_TOP = 0;                     // 上マージン行
 uint16_t M_BOTTOM = SC_H - 1;           // 下マージン行
 
 // 座標やサイズのプレ計算
-const uint16_t SCSIZE   = SC_W * SC_H;  // キャラクタスクリーンサイズ
-const uint16_t SP_W     = SC_W * CH_W;  // ピクセルスクリーン横サイズ
-const uint16_t SP_H     = SC_H * CH_H;  // ピクセルスクリーン縦サイズ
-const uint16_t MAX_CH_X = CH_W - 1;     // フォント最大横位置
-const uint16_t MAX_CH_Y = CH_H - 1;     // フォント最大縦位置
-const uint16_t MAX_SC_X = SC_W - 1;     // キャラクタスクリーン最大横位置
-const uint16_t MAX_SC_Y = SC_H - 1;     // キャラクタスクリーン最大縦位置
-const uint16_t MAX_SP_X = SP_W - 1;     // ピクセルスクリーン最大横位置
-const uint16_t MAX_SP_Y = SP_H - 1;     // ピクセルスクリーン最大縦位置
+PROGMEM const uint16_t SCSIZE   = SC_W * SC_H;  // キャラクタスクリーンサイズ
+PROGMEM const uint16_t SP_W     = SC_W * CH_W;  // ピクセルスクリーン横サイズ
+PROGMEM const uint16_t SP_H     = SC_H * CH_H;  // ピクセルスクリーン縦サイズ
+PROGMEM const uint16_t MAX_CH_X = CH_W - 1;     // フォント最大横位置
+PROGMEM const uint16_t MAX_CH_Y = CH_H - 1;     // フォント最大縦位置
+PROGMEM const uint16_t MAX_SC_X = SC_W - 1;     // キャラクタスクリーン最大横位置
+PROGMEM const uint16_t MAX_SC_Y = SC_H - 1;     // キャラクタスクリーン最大縦位置
+PROGMEM const uint16_t MAX_SP_X = SP_W - 1;     // ピクセルスクリーン最大横位置
+PROGMEM const uint16_t MAX_SP_Y = SP_H - 1;     // ピクセルスクリーン最大縦位置
 
 // 文字アトリビュート用
 struct TATTR {
@@ -82,7 +82,7 @@ union ATTR {
 };
 
 // カラーアトリビュート用 (RGB565)
-static const uint16_t aColors[] = {
+PROGMEM const uint16_t aColors[] = {
   // Normal (0..7)
   0x0000, // black
   0x8000, // red
@@ -103,14 +103,14 @@ static const uint16_t aColors[] = {
   0xe73c  // white
 };
 
-const uint8_t clBlack = 0;
-const uint8_t clRed = 1;
-const uint8_t clGreen = 2;
-const uint8_t clYellow = 3;
-const uint8_t clBlue = 4;
-const uint8_t clMagenta = 5;
-const uint8_t clCyan = 6;
-const uint8_t clWhite = 7;
+PROGMEM const uint8_t clBlack = 0;
+PROGMEM const uint8_t clRed = 1;
+PROGMEM const uint8_t clGreen = 2;
+PROGMEM const uint8_t clYellow = 3;
+PROGMEM const uint8_t clBlue = 4;
+PROGMEM const uint8_t clMagenta = 5;
+PROGMEM const uint8_t clCyan = 6;
+PROGMEM const uint8_t clWhite = 7;
 
 struct TCOLOR {
   uint8_t Foreground : 4;
@@ -121,6 +121,40 @@ union COLOR {
   struct TCOLOR Color;
 };
 
+// 環境設定用
+struct TMODE {
+  bool Reserved2 : 1;  // 2
+  bool Reserved4 : 1;  // 4:
+  bool Reserved12 : 1; // 12:
+  bool CrLf : 1;       // 20: LNM (Line feed new line mode)
+  bool Reserved33 : 1; // 33:
+  bool Reserved34 : 1; // 34:
+  uint8_t Reverse : 2;    
+};
+
+union MODE {
+  uint8_t value;
+  struct TMODE Flgs;
+};
+
+struct TMODE_EX {
+  bool Reserved1 : 1;     // 1 DECCKM (Cursor Keys Mode)
+  bool Reserved2 : 1;     // 2 DECANM (ANSI/VT52 Mode)
+  bool Reserved3 : 1;     // 3 DECCOLM (Column Mode)
+  bool Reserved4 : 1;     // 4 DECSCLM (Scrolling Mode)
+  bool ScreenReverse : 1; // 5 DECSCNM (Screen Mode)
+  bool Reserved6 : 1;     // 6 DECOM (Origin Mode)
+  bool WrapLine  : 1;     // 7 DECAWM (Autowrap Mode)
+  bool Reserved8 : 1;     // 8 DECARM (Auto Repeat Mode)
+  bool Reserved9 : 1;     // 9 DECINLM (Interlace Mode)
+  uint16_t Reverse : 7;    
+};
+
+union MODE_EX {
+  uint16_t value;
+  struct TMODE_EX Flgs;
+};
+
 // バッファ
 uint8_t screen[SCSIZE];      // スクリーンバッファ
 uint8_t attrib[SCSIZE];      // 文字アトリビュートバッファ
@@ -128,29 +162,35 @@ uint8_t colors[SCSIZE];      // カラーアトリビュートバッファ
 uint8_t tabs[SC_W];          // タブ位置バッファ
 
 // 状態
-bool wrap = true;            // 折り返しモード
-bool isShowCursor = false;   // カーソル表示中か？
-bool canShowCursor = false;  // カーソル表示可能か？
-bool lastShowCursor = false; // 前回のカーソル表示状態
-bool hasParam = false;       // <ESC> [ がパラメータを持っているか？
-uint8_t escMode = 0;         // エスケープシーケンスモード
+PROGMEM enum class em {NONE,  ES, CSI, CSI2, LSC, G0S, G1S};
+PROGMEM uint8_t defaultMode = 0b00001000;
+PROGMEM uint8_t defaultModeEx = 0b0000000001000000;
+PROGMEM const union ATTR defaultAttr = {0b00000000};
+PROGMEM const union COLOR defaultColor = {(clBlack << 4) | clWhite}; // back, fore
+em escMode = em::NONE;         // エスケープシーケンスモード
+bool isShowCursor = false;     // カーソル表示中か？
+bool canShowCursor = false;    // カーソル表示可能か？
+bool lastShowCursor = false;   // 前回のカーソル表示状態
+bool hasParam = false;         // <ESC> [ がパラメータを持っているか？
+bool isDECPrivateMode = false; // DEC Private Mode (<ESC> [ ?)
+union MODE mode = {defaultMode};
+union MODE_EX mode_ex = {defaultModeEx};
 
-// オリジナル情報
-int16_t o_XP = 0;
-int16_t o_YP = 0;
-union COLOR oColor;
+// 前回位置情報
+int16_t p_XP = 0;
+int16_t p_YP = 0;
 
 // カレント情報
 int16_t XP = 0;
 int16_t YP = 0;
-union ATTR cAttr;
-union COLOR cColor;
+union ATTR cAttr   = defaultAttr;
+union COLOR cColor = defaultColor;
 
 // バックアップ情報
 int16_t b_XP = 0;
 int16_t b_YP = 0;
-union ATTR bAttr;
-union COLOR bColor;
+union ATTR bAttr   = defaultAttr;
+union COLOR bColor = defaultColor;
 
 // CSI パラメータ
 int16_t nVals = 0;
@@ -171,6 +211,7 @@ void sc_updateChar(uint16_t x, uint16_t y) {
   uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink << 3)];
   uint16_t back = aColors[l.Color.Background | (a.Bits.Blink << 3)];
   if (a.Bits.Reverse) swap(fore, back);
+  if (mode_ex.Flgs.ScreenReverse) swap(fore, back);
   uint16_t xx = x * CH_W;
   uint16_t yy = y * CH_H;
   tft.setAddrWindow(xx, yy, xx + MAX_CH_X, yy + MAX_CH_Y);
@@ -194,22 +235,22 @@ void drawCursor(uint16_t x, uint16_t y) {
   tft.setAddrWindow(xx, yy, xx + MAX_CH_X, yy + MAX_CH_Y);
   for (uint8_t i = 0; i < CH_H; i++) {
     for (uint8_t j = 0; j < CH_W; j++)
-      tft.pushColor(aColors[oColor.Color.Foreground]);
+      tft.pushColor(ILI9341_WHITE);
   }
 }
 
 // カーソルの表示
 void dispCursor(bool forceupdate) {
-  if (escMode)
+  if (escMode != em::NONE)
     return;
   if (!forceupdate)
     isShowCursor = !isShowCursor;
   if (lastShowCursor || (forceupdate && isShowCursor))
-    sc_updateChar(o_XP, o_YP);
+    sc_updateChar(p_XP, p_YP);
   if (isShowCursor) {
     drawCursor(XP, YP);
-    o_XP = XP;
-    o_YP = YP;
+    p_XP = XP;
+    p_YP = YP;
   }
   if (!forceupdate)
     canShowCursor = false;
@@ -237,6 +278,7 @@ void sc_updateLine(uint16_t ln) {
       uint16_t fore = aColors[l.Color.Foreground | (a.Bits.Blink << 3)];
       uint16_t back = aColors[l.Color.Background | (a.Bits.Blink << 3)];
       if (a.Bits.Reverse) swap(fore, back);
+      if (mode_ex.Flgs.ScreenReverse) swap(fore, back);
       dt = fontTop[c * CH_H + i];                  // 文字内i行データの取得
       bool prev = (a.Bits.Underline && (i == MAX_CH_Y));
       for (uint16_t j = 0; j < CH_W; j++) {
@@ -262,18 +304,20 @@ void setCursorToHome() {
 
 // カーソル位置と属性の初期化
 void initCursorAndAttribute() {
-  cAttr.value = 0;
-  cColor.value = oColor.value;
+  cAttr.value = defaultAttr.value;
+  cColor.value = defaultColor.value;
   memset(tabs, 0x00, SC_W);
   for (uint8_t i = 0; i < SC_W; i += 8)
     tabs[i] = 1;
   setTopAndBottomMargins(1, SC_H);
+  mode.value = defaultMode;
+  mode_ex.value = defaultModeEx;
 }
 
 // 一行スクロール
 // (DECSTBM の影響を受ける)
 void scroll() {
-  XP = 0;
+  if (mode.Flgs.CrLf) XP = 0;
   YP++;
   if (YP > M_BOTTOM) {
     uint16_t n = SCSIZE - SC_W - ((M_TOP + MAX_SC_Y - M_BOTTOM) * SC_W);
@@ -286,8 +330,8 @@ void scroll() {
     for (uint8_t x = 0; x < SC_W; x++) {
       idx2 = idx + x;
       screen[idx2] = 0;
-      attrib[idx2] = 0;
-      colors[idx2] = oColor.value;
+      attrib[idx2] = defaultAttr.value;
+      colors[idx2] = defaultColor.value;
     }
     tft.setAddrWindow(0, M_TOP * CH_H, MAX_SP_X, (M_BOTTOM + 1) * CH_H - 1);
     for (uint8_t y = M_TOP; y <= M_BOTTOM; y++)
@@ -297,8 +341,9 @@ void scroll() {
 }
 
 // パラメータのクリア
-void clearParams(uint8_t m) {
+void clearParams(em m) {
   escMode = m;
+  isDECPrivateMode = false;
   nVals = 0;
   vals[0] = vals[1] = vals[2] = vals[3] = 0;
   hasParam = false;
@@ -308,27 +353,27 @@ void clearParams(uint8_t m) {
 void printChar(char c) {
   // [ESC] キー
   if (c == 0x1b) {
-    escMode = 1;   // エスケープシーケンス開始
+    escMode = em::ES;   // エスケープシーケンス開始
     return;
   }
   // エスケープシーケンス
-  if (escMode == 1) {
+  if (escMode == em::ES) {
     switch (c) {
       case '[':
         // Control Sequence Introducer (CSI) シーケンス へ
-        clearParams(2);
+        clearParams(em::CSI);
         break;
       case '#':
         // Line Size Command  シーケンス へ
-        clearParams(4);
+        clearParams(em::LSC);
         break;
       case '(':
         // G0 セット シーケンス へ
-        clearParams(5);
+        clearParams(em::G0S);
         break;
       case ')':
         // G1 セット シーケンス へ
-        clearParams(6);
+        clearParams(em::G1S);
         break;
       default:
         // <ESC> xxx: エスケープシーケンス
@@ -363,7 +408,7 @@ void printChar(char c) {
             break;
           case 'M':
             // RI (Reverse Index): カーソルを一行上へ移動
-            reverceIndex(1);
+            reverseIndex(1);
             break;
           case 'Z':
             // DECID (Identify): 端末IDシーケンスを送信
@@ -378,28 +423,23 @@ void printChar(char c) {
             unknownSequence(escMode, c);
             break;
         }
-        clearParams(0);
+        clearParams(em::NONE);
         break;
     }
     return;
   }
 
   // "[" Control Sequence Introducer (CSI) シーケンス
-  if (escMode == 2) {
-    switch (c) {
-      case '?':
-        escMode = 21;
-        break;
-      default:
-        escMode = 20;
-        break;
-    }
-  }
-
   int16_t v1 = 0;
   int16_t v2 = 0;
 
-  if ((escMode == 20) || (escMode == 21)) {
+  if (escMode == em::CSI) {
+    escMode = em::CSI2;
+    isDECPrivateMode = (c == '?');
+    if (isDECPrivateMode) return;
+  }
+
+  if (escMode == em::CSI2) {
     if (isdigit(c)) {
       // [パラメータ]
       vals[nVals] = vals[nVals] * 10 + (c - '0');
@@ -414,7 +454,7 @@ void printChar(char c) {
         case 'A':
           // CUU (Cursor Up): カーソルをPl行上へ移動
           v1 = (nVals == 0) ? 1 : vals[0];
-          reverceIndex(v1);
+          reverseIndex(v1);
           break;
         case 'B':
           // CUD (Cursor Down): カーソルをPl行下へ移動
@@ -470,12 +510,22 @@ void printChar(char c) {
           tabulationClear(v1);
           break;
         case 'h':
-          // SM (Set Mode): モードのセット
-          setMode(vals, nVals);
+          if (isDECPrivateMode) {
+            // DECSET (DEC Set Mode): モードのセット
+            decSetMode(vals, nVals);
+          } else {
+            // SM (Set Mode): モードのセット
+            setMode(vals, nVals);
+          }
           break;
         case 'l':
-          // RM (Reset Mode): モードのリセット
-          resetMode(vals, nVals);
+          if (isDECPrivateMode) {
+            // DECRST (DEC Reset Mode): モードのリセット
+            decResetMode(vals, nVals);
+          } else {
+            // RM (Reset Mode): モードのリセット
+            resetMode(vals, nVals);
+          }
           break;
         case 'm':
           // SGR (Select Graphic Rendition): 文字修飾の設定
@@ -509,13 +559,13 @@ void printChar(char c) {
           unknownSequence(escMode, c);
           break;
       }
-      clearParams(0);
+      clearParams(em::NONE);
     }
     return;
   }
 
   // "#" Line Size Command  シーケンス
-  if (escMode == 4) {
+  if (escMode == em::LSC) {
     switch (c) {
       case '3':
         // DECDHL (Double Height Line): カーソル行を倍高、倍幅、トップハーフへ変更
@@ -542,28 +592,28 @@ void printChar(char c) {
         unknownSequence(escMode, c);
         break;
     }
-    clearParams(0);
+    clearParams(em::NONE);
     return;
   }
 
   // "(" G0 セットシーケンス
-  if (escMode == 5) {
+  if (escMode == em::G0S) {
     // SCS (Select Character Set): G0 文字コードの設定
     setG0charset(c);
-    clearParams(0);
+    clearParams(em::NONE);
     return;
   }
 
   // ")" G1 セットシーケンス
-  if (escMode == 6) {
+  if (escMode == em::G1S) {
     // SCS (Select Character Set): G1 文字コードの設定
     setG1charset(c);
-    clearParams(0);
+    clearParams(em::NONE);
     return;
   }
 
-  // 改行 (LF) / (FF)
-  if ((c == 0x0a) || (c == 0x0c)) {
+  // 改行 (LF / VT / FF)
+  if ((c == 0x0a) || (c == 0x0b) || (c == 0x0c)) {
     scroll();
     return;
   }
@@ -610,9 +660,9 @@ void printChar(char c) {
   // X 位置 + 1
   XP ++;
 
-  // ワードラップ
+  // 折り返し行
   if (XP >= SC_W) {
-    if (wrap)
+    if (mode_ex.Flgs.WrapLine)
       scroll();
     else
       XP = MAX_SC_X;
@@ -645,12 +695,12 @@ void restoreCursor() {
 
 // DECKPAM (Keypad Application Mode): アプリケーションキーパッドモードにセット
 void keypadApplicationMode() {
-  Serial.println("Unimplement: keypadApplicationMode");
+  Serial.println(F("Unimplement: keypadApplicationMode"));
 }
 
 // DECKPNM (Keypad Numeric Mode): 数値キーパッドモードにセット
 void keypadNumericMode() {
-  Serial.println("Unimplement: keypadNumericMode");
+  Serial.println(F("Unimplement: keypadNumericMode"));
 }
 
 // IND (Index): カーソルを一行下へ移動
@@ -672,7 +722,7 @@ void horizontalTabulationSet() {
 
 // RI (Reverse Index): カーソルを一行上へ移動
 // (DECSTBM の影響を受ける)
-void reverceIndex(int16_t v) {
+void reverseIndex(int16_t v) {
   cursorUp(v);
 }
 
@@ -725,6 +775,14 @@ void cursorPosition(uint8_t y, uint8_t x) {
   if (XP >= SC_W) XP = MAX_SC_X;
 }
 
+// 画面を再描画
+void refreshScreen() {
+
+  tft.setAddrWindow(0, 0, MAX_SP_X, MAX_SP_Y);
+  for (uint8_t i = 0; i < SC_H; i++)
+    sc_updateLine(i);
+}
+
 // ED (Erase In Display): 画面を消去
 void eraseInDisplay(uint8_t m) {
   uint8_t sl = 0, el = 0;
@@ -756,8 +814,8 @@ void eraseInDisplay(uint8_t m) {
 
   if (m <= 2) {
     memset(&screen[idx], 0x00, n);
-    memset(&attrib[idx], 0x00, n);
-    memset(&colors[idx], 0x00, n);
+    memset(&attrib[idx], defaultAttr.value, n);
+    memset(&colors[idx], defaultColor.value, n);
     tft.setAddrWindow(0, sl * CH_H, MAX_SP_X, (el + 1) * CH_H - 1);
     for (uint8_t i = sl; i <= el; i++)
       sc_updateLine(i);
@@ -789,8 +847,8 @@ void eraseInLine(uint8_t m) {
   if (m <= 2) {
     uint16_t n = elp - slp + 1;
     memset(&screen[slp], 0x00, n);
-    memset(&attrib[slp], 0x00, n);
-    memset(&colors[slp], 0x00, n);
+    memset(&attrib[slp], defaultAttr.value, n);
+    memset(&colors[slp], defaultColor.value, n);
     tft.setAddrWindow(0, YP * CH_H, MAX_SP_X, (YP + 1) * CH_H - 1);
     sc_updateLine(YP);
   }
@@ -814,8 +872,8 @@ void insertLine(uint8_t v) {
     memmove(&colors[idx2], &colors[idx], n2);
   }
   memset(&screen[idx], 0x00, n);
-  memset(&attrib[idx], 0x00, n);
-  memset(&colors[idx], 0x00, n);
+  memset(&attrib[idx], defaultAttr.value, n);
+  memset(&colors[idx], defaultColor.value, n);
   tft.setAddrWindow(0, YP * CH_H, MAX_SP_X, (M_BOTTOM + 1) * CH_H - 1);
   for (uint8_t y = YP; y <= M_BOTTOM; y++)
     sc_updateLine(y);
@@ -840,8 +898,8 @@ void deleteLine(uint8_t v) {
     memmove(&colors[idx], &colors[idx2], n2);
   }
   memset(&screen[idx3], 0x00, n);
-  memset(&attrib[idx3], 0x00, n);
-  memset(&colors[idx3], 0x00, n);
+  memset(&attrib[idx3], defaultAttr.value, n);
+  memset(&colors[idx3], defaultColor.value, n);
   tft.setAddrWindow(0, YP * CH_H, MAX_SP_X, (M_BOTTOM + 1) * CH_H - 1);
   for (uint8_t y = YP; y <= M_BOTTOM; y++)
     sc_updateLine(y);
@@ -849,17 +907,17 @@ void deleteLine(uint8_t v) {
 
 // CPR (Cursor Position Report): カーソル位置のレポート
 void cursorPositionReport(uint16_t y, uint16_t x) {
-  Serial3.print("\e[");
+  Serial3.print(F("\e["));
   Serial3.print(String(y, DEC));
-  Serial3.print(";");
+  Serial3.print(F(";"));
   Serial3.print(String(x, DEC));
-  Serial3.print("R"); // CPR (Cursor Position Report)
+  Serial3.print(F("R")); // CPR (Cursor Position Report)
 }
 
 // DA (Device Attributes): 装置オプションのレポート
 // オプションのレポート
 void deviceAttributes(uint8_t m) {
-  Serial3.print("\e[?1;2c"); // 2 Advanced video option (AVO)
+  Serial3.print(F("\e[?1;0c")); // 0 No options
 }
 
 // TBC (Tabulation Clear): タブストップをクリア
@@ -876,16 +934,52 @@ void tabulationClear(uint8_t m) {
   }
 }
 
+// LNM (Line Feed / New Line Mode): 改行モード
+void lineMode(bool m) {
+  mode.Flgs.CrLf = m;
+}
+
+// DECSCNM (Screen Mode): // 画面反転モード
+void screenMode(bool m) {
+  mode_ex.Flgs.ScreenReverse = m;
+  refreshScreen();
+}
+
+// DECAWM (Auto Wrap Mode): 自動折り返しモード
+void autoWrapMode(bool m) {
+  mode_ex.Flgs.WrapLine = m;
+}
+
 // SM (Set Mode): モードのセット
 void setMode(int16_t *vals, int16_t nVals) {
   for (int16_t i = 0; i < nVals; i++) {
     switch (vals[i]) {
-      case 7:
-        // 文字の折り返しをオンにセット
-        wrap = true;
+      case 20:
+        // LNM (Line Feed / New Line Mode)
+        lineMode(true);
         break;
       default:
-        Serial.print("Unimplement: setMode ");
+        Serial.print(F("Unimplement: setMode "));
+        Serial.println(String(vals[i], DEC));
+        break;
+    }
+  }
+}
+
+// DECSET (DEC Set Mode): モードのセット
+void decSetMode(int16_t *vals, int16_t nVals) {
+  for (int16_t i = 0; i < nVals; i++) {
+    switch (vals[i]) {
+      case 5:
+        // DECSCNM (Screen Mode): // 画面反転モード
+        screenMode(true);
+        break;
+      case 7:
+        // DECAWM (Auto Wrap Mode): 自動折り返しモード
+        autoWrapMode(true);
+        break;
+      default:
+        Serial.print(F("Unimplement: decSetMode "));
         Serial.println(String(vals[i], DEC));
         break;
     }
@@ -896,12 +990,32 @@ void setMode(int16_t *vals, int16_t nVals) {
 void resetMode(int16_t *vals, int16_t nVals) {
   for (int16_t i = 0; i < nVals; i++) {
     switch (vals[i]) {
-      case 7:
-        // 文字の折り返しをオフにセット
-        wrap = false;
+      case 20:
+        // LNM (Line Feed / New Line Mode)
+        lineMode(false);
         break;
       default:
-        Serial.print("Unimplement: resetMode ");
+        Serial.print(F("Unimplement: resetMode "));
+        Serial.println(String(vals[i], DEC));
+        break;
+    }
+  }
+}
+
+// DECRST (DEC Reset Mode): モードのリセット
+void decResetMode(int16_t *vals, int16_t nVals) {
+  for (int16_t i = 0; i < nVals; i++) {
+    switch (vals[i]) {
+      case 5:
+        // DECSCNM (Screen Mode): // 画面反転モード
+        screenMode(false);
+        break;
+      case 7:
+        // DECAWM (Auto Wrap Mode): 自動折り返しモード
+        autoWrapMode(false);
+        break;
+      default:
+        Serial.print(F("Unimplement: decResetMode "));
         Serial.println(String(vals[i], DEC));
         break;
     }
@@ -921,7 +1035,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
           case 0:
             // 属性クリア
             cAttr.value = 0;
-            cColor.value = oColor.value;
+            cColor.value = defaultColor.value;
             break;
           case 1:
             // 太字
@@ -965,7 +1079,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
             break;
           case 39:
             // 前景色をデフォルトに戻す
-            cColor.Color.Foreground = oColor.Color.Foreground;
+            cColor.Color.Foreground = defaultColor.Color.Foreground;
             break;
           case 48:
             seq = 1;
@@ -973,7 +1087,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
             break;
           case 49:
             // 背景色をデフォルトに戻す
-            cColor.Color.Background = oColor.Color.Background;
+            cColor.Color.Background = defaultColor.Color.Background;
             break;
           default:
             if (v >= 30 && v <= 37) {
@@ -1016,9 +1130,9 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
           } else {
             // 24 色グレースケールカラー (2 色のグレースケールカラーが使われる)
             if (v < 244)
-              cIdx = 0;
+              cIdx = clBlack;
             else
-              cIdx = 7;
+              cIdx = clWhite;
           }
           if (isFore)
             cColor.Color.Foreground = cIdx;
@@ -1059,7 +1173,7 @@ void selectGraphicRendition(int16_t *vals, int16_t nVals) {
 void deviceStatusReport(uint8_t m) {
   switch (m) {
     case 5:
-      Serial3.print("\e[0n");      // 0 Ready, No malfunctions detected (default) (DSR)
+      Serial3.print(F("\e[0n"));   // 0 Ready, No malfunctions detected (default) (DSR)
       break;
     case 6:
       cursorPositionReport(XP, YP); // CPR (Cursor Position Report)
@@ -1119,30 +1233,30 @@ void invokeConfidenceTests(uint8_t m) {
 
 // DECDHL (Double Height Line): カーソル行を倍高、倍幅、トップハーフへ変更
 void doubleHeightLine_TopHalf() {
-  Serial.println("Unimplement: doubleHeightLine_TopHalf");
+  Serial.println(F("Unimplement: doubleHeightLine_TopHalf"));
 }
 
 // DECDHL (Double Height Line): カーソル行を倍高、倍幅、ボトムハーフへ変更
 void doubleHeightLine_BotomHalf() {
-  Serial.println("Unimplement: doubleHeightLine_BotomHalf");
+  Serial.println(F("Unimplement: doubleHeightLine_BotomHalf"));
 }
 
 // DECSWL (Single-width Line): カーソル行を単高、単幅へ変更
 void singleWidthLine() {
-  Serial.println("Unimplement: singleWidthLine");
+  Serial.println(F("Unimplement: singleWidthLine"));
 }
 
 // DECDWL (Double-Width Line): カーソル行を単高、倍幅へ変更
 void doubleWidthLine() {
-  Serial.println("Unimplement: doubleWidthLine");
+  Serial.println(F("Unimplement: doubleWidthLine"));
 }
 
 // DECALN (Screen Alignment Display): 画面を文字‘E’で埋める
 void screenAlignmentDisplay() {
   tft.setAddrWindow(0, 0, MAX_SP_X, MAX_SP_Y);
   memset(screen, 0x45, SCSIZE);
-  memset(attrib, 0x00, SCSIZE);
-  memset(colors, oColor.value, SCSIZE);
+  memset(attrib, defaultAttr.value, SCSIZE);
+  memset(colors, defaultColor.value, SCSIZE);
   for (uint8_t y = 0; y < SC_H; y++)
     sc_updateLine(y);
 }
@@ -1152,7 +1266,7 @@ void screenAlignmentDisplay() {
 
 // G0 文字コードの設定
 void setG0charset(char c) {
-  Serial.println("Unimplement: setG0charset");
+  Serial.println(F("Unimplement: setG0charset"));
 }
 
 // "(" G1 Sets Sequence
@@ -1160,40 +1274,37 @@ void setG0charset(char c) {
 
 // G1 文字コードの設定
 void setG1charset(char c) {
-  Serial.println("Unimplement: setG1charset");
+  Serial.println(F("Unimplement: setG1charset"));
 }
 
 // Unknown Sequence
 // -----------------------------------------------------------------------------
 
 // 不明なシーケンス
-void unknownSequence(uint8_t m, char c) {
-  String s = (m > 0) ? "[ESC]" : "";
+void unknownSequence(em m, char c) {
+  String s = (m != em::NONE) ? "[ESC]" : "";
   switch (m) {
-    case 2:
+    case em::CSI:
       s = s + " [";
       break;
-    case 3:
-      s = s + " ]";
-      break;
-    case 4:
+    case em::LSC:
       s = s + " #";
       break;
-    case 5:
+    case em::G0S:
       s = s + " (";
       break;
-    case 6:
+    case em::G1S:
       s = s + " )";
       break;
-    case 20:
-      break;
-    case 21:
-      s = s + " [ ?";
+    case em::CSI2:
+      s = s + " [";
+      if (isDECPrivateMode) 
+        s = s + "?";
       break;
   }
-  Serial.print("Unknown: ");
+  Serial.print(F("Unknown: "));
   Serial.print(s);
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(c);
 }
 
@@ -1204,6 +1315,7 @@ void handle_timer() {
   canShowCursor = true;
 }
 
+// セットアップ
 void setup() {
   keyboard.begin(KBD_DAT, KBD_CLK);
   Serial.begin(115200);
@@ -1220,12 +1332,8 @@ void setup() {
   digitalWrite(LED_04, LOW);
 
   // TFT の初期化
-  oColor.Color.Foreground = clWhite;
-  oColor.Color.Background = clBlack;
-  cColor.value = oColor.value;
   tft.begin();
   tft.setRotation(3);
-  tft.fillScreen(aColors[oColor.Color.Background]);
   fontTop = (uint8_t*)font6x8tt + 3;
   resetToInitialState();
   printString("\e[0;44m *** Terminal Init *** \e[0m\n");
@@ -1241,6 +1349,7 @@ void setup() {
   Timer3.resume();
 }
 
+// ループ
 void loop() {
   bool needCursorUpdate = false;
 
@@ -1249,28 +1358,28 @@ void loop() {
     char c = keyboard.read();
     switch (c) {
       case PS2_UPARROW:
-        Serial3.print("\e[A");
+        Serial3.print(F("\e[A"));
         break;
       case PS2_DOWNARROW:
-        Serial3.print("\e[B");
+        Serial3.print(F("\e[B"));
         break;
       case PS2_RIGHTARROW:
-        Serial3.print("\e[C");
+        Serial3.print(F("\e[C"));
         break;
       case PS2_LEFTARROW:
-        Serial3.print("\e[D");
+        Serial3.print(F("\e[D"));
         break;
       case PS2_F1:
-        Serial3.print("\e[P");
+        Serial3.print(F("\e[P"));
         break;
       case PS2_F2:
-        Serial3.print("\e[Q");
+        Serial3.print(F("\e[Q"));
         break;
       case PS2_F3:
-        Serial3.print("\e[R");
+        Serial3.print(F("\e[R"));
         break;
       case PS2_F4:
-        Serial3.print("\e[S");
+        Serial3.print(F("\e[S"));
         break;
       default:
         Serial3.print(c);
