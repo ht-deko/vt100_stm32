@@ -90,8 +90,8 @@ Arduino STM32 のデフォルトである 64 だと 9600bps で描画が追い�
 
  - [Serial buffer (STM32duino.com)](https://www.stm32duino.com/viewtopic.php?f=3&t=1070&sid=ffd27e6413dc3c4009afedd3df84f569&start=10#p24957)
 
-### Crrl キー対応
-Crrl キーに対応させるため、Arduino_PS2Keyboard の PS2Keyboard.cpp を編集します。
+### Ctrl キー対応
+Ctrl キーに対応させるため、Arduino_PS2Keyboard の PS2Keyboard.cpp を編集します。
 
 ```cpp
 #define BREAK     0x01
